@@ -1,0 +1,65 @@
+pragma solidity ^0.4.8;
+
+contract TicTacToe{
+    
+    uint participationFee;
+    uint n;
+    uint start;
+    address private admin;
+    uint[3][3] matrix;
+    address[] participants;
+    mapping(address => bool) isParticipantAlreadyPresent;
+    mapping(address => uint) playerNumber;
+    uint move;
+    uint playerMove;
+    
+    modifier notQuizMaster(){
+        require(msg.sender!=admin,"Admin cannot become a particiant");
+        _;
+    }
+    
+    modifier feeEqualToPFee(uint _participationFee){
+        require(_participationFee==participationFee,"Any Fee other than participationFee is not acceptable");
+        _;
+    }
+    
+    modifier verifyRevealDeadline(){
+        require((n==0 || now-start <= 300) ,"More Participants are required");
+        _;
+    }
+    
+    modifier numberOfParticipants(){
+        require(n>0,"No more participants can participate");
+        _;
+    }
+    
+    modifier notAlreadyRegistered(address participant){
+        require(isParticipantAlreadyPresent[participant]==false,"You have already registered");
+        _;
+    }
+    
+    
+    modifier isPlayerMove(address participant){
+        require(playerNumber[participant]==playerMove,"You have already registered");
+        _;
+    }
+    
+    
+    constructor(uint _participationFee)
+    public
+    {   
+        n=2;
+        participationFee = _participationFee;
+        start = now;
+    }
+    
+    function playerMove(uint x, uint y)
+    {
+        
+    }
+    
+    
+   
+    
+    
+}
