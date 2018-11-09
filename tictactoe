@@ -6,13 +6,14 @@ contract TicTacToe{
     uint n;
     uint start;
     address private admin;
-    uint[3][3] matrix;
+    uint[][] public matrix;
     address[] participants;
     mapping(address => bool) isParticipantAlreadyPresent;
     mapping(address => uint) playerNumber;
     uint move;
     uint playerTurn = 0;
-    uint Winner;
+    uint public Winner;
+    string boardPrint;
     
     modifier notAdmin(){
         require(msg.sender!=admin,"Admin cannot become a particiant");
@@ -61,13 +62,26 @@ contract TicTacToe{
         n=2;
         participationFee = _participationFee;
         start = now;
+        matrix.push([0,0,0]);
+        matrix.push([0,0,0]);
+        matrix.push([0,0,0]);
     }
     
+    // function printMatrix()
+    // {
+    //     for(uint i=0;i<3;i++){
+    //         for(uint j=0;j<3;j++){
+                
+    //         }
+    //     }
+    // }
     
     function registerParticipants()
     public
     numberOfParticipants
     notAdmin
+    notAlreadyRegistered(msg.sender)
+    feeEqualToPFee(msg.value)
     payable
     {
         n = n-1;
@@ -85,7 +99,7 @@ contract TicTacToe{
     notAdmin
     hasSquareNotBeenTaken(x,y)
     {
-        matrix[x-1][y-1] = playerTurn+1;
+        matrix[x][y] = playerTurn+1;
         checkWinner();
         playerTurn = 1 - playerTurn;
     }
