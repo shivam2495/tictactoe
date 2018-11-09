@@ -78,6 +78,7 @@ contract TicTacToe{
     constructor(uint _participationFee)
     public
     {   
+        admin = msg.sender;
         n=2;
         participationFee = _participationFee;
         start = now;
