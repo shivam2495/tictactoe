@@ -16,6 +16,24 @@ contract TicTacToe{
     uint playerNumberZero = 0;
     string boardPrint;
     
+    
+    
+    
+    
+    address winner;
+    mapping(uint=>uint)rewardMap;
+    bool reap = false;
+    modifier isAdmin() {
+        require(msg.sender==admin,"Only Admin can calculate reward");
+    _;}
+
+    
+    
+    
+    
+    
+    
+    
     modifier notAdmin(){
         require(msg.sender!=admin,"Admin cannot become a particiant");
         _;
@@ -151,4 +169,49 @@ contract TicTacToe{
             return;
         }
     }
+    
+    
+    
+    function calcReward()
+    public
+    isAdmin()
+    hasGameNotEnded
+    {
+        rewardMap[Winner]  = (2*participationFee);
+    }
+    
+    function reapReward()
+    public
+    payable
+    hasGameNotEnded
+    {
+        msg.sender.transfer(rewardMap[playerNumber[msg.sender]+1]);
+        rewardMap[playerNumber[msg.sender]+1] = 0;
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 }
