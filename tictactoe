@@ -2,7 +2,7 @@ pragma solidity ^0.4.8;
 
 contract TicTacToe{
     
-    uint participationFee;
+    uint public participationFee;
     uint n;
     uint start;
     address private admin;
@@ -11,8 +11,9 @@ contract TicTacToe{
     mapping(address => bool) isParticipantAlreadyPresent;
     mapping(address => uint) playerNumber;
     uint move;
-    uint playerTurn = 0;
+    uint public playerTurn = 0;
     uint public Winner;
+    uint playerNumberZero = 0;
     string boardPrint;
     
     modifier notAdmin(){
@@ -42,12 +43,12 @@ contract TicTacToe{
     
     
     modifier isPlayerTurn(address participant){
-        require(playerNumber[participant]==playerTurn,"You have already registered");
+        require(playerNumber[participant]==playerTurn,"Not Your Turn");
         _;
     }
     
     modifier hasGameNotEnded(){
-        require(Winner == 0,"You have already registered");
+        require(Winner == 0,"Game Ended");
         _;
     }
     
@@ -87,6 +88,7 @@ contract TicTacToe{
         n = n-1;
         participants.push(msg.sender);
         isParticipantAlreadyPresent[msg.sender] = true;
+        playerNumber[msg.sender] = playerNumberZero++;
     }
     
     
@@ -110,50 +112,43 @@ contract TicTacToe{
     {
         if(matrix[0][0]!=0 && matrix[0][0]==matrix[0][1] && matrix[0][0]==matrix[0][2])
         {
-            Winner = matrix[0][0] - 1;
+            Winner = matrix[0][0];
             return;
         }
         if(matrix[1][0]!=0 && matrix[1][0]==matrix[1][1] && matrix[1][0]==matrix[1][2])
         {
-            Winner = matrix[1][0] - 1;
+            Winner = matrix[1][0];
             return;
         }
         if(matrix[2][0]!=0 && matrix[2][0]==matrix[2][1] && matrix[2][0]==matrix[2][2])
         {
-            Winner = matrix[2][0] - 1;
+            Winner = matrix[2][0];
             return;
         }
         if(matrix[0][0]!=0 && matrix[0][0]==matrix[1][0] && matrix[0][0]==matrix[2][0])
         {
-            Winner = matrix[0][0] - 1;
+            Winner = matrix[0][0];
             return;
         }
         if(matrix[0][1]!=0 && matrix[0][1]==matrix[1][1] && matrix[0][1]==matrix[2][1])
         {
-            Winner = matrix[0][1] - 1;
+            Winner = matrix[0][1];
             return;
         }
         if(matrix[0][2]!=0 && matrix[0][2]==matrix[1][2] && matrix[0][2]==matrix[2][2])
         {
-            Winner = matrix[0][2] - 1;
+            Winner = matrix[0][2];
             return;
         }
         if(matrix[0][0]!=0 && matrix[0][0]==matrix[1][1] && matrix[0][0]==matrix[2][2])
         {
-            Winner = matrix[0][0] - 1;
+            Winner = matrix[0][0];
             return;
         }
         if(matrix[0][2]!=0 && matrix[0][2]==matrix[1][1] && matrix[2][0]==matrix[0][2])
         {
-            Winner = matrix[0][2] - 1;
+            Winner = matrix[0][2];
             return;
         }
     }
-    
-    
-    
-    
-    
-    
-    
 }
