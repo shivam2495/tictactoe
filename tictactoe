@@ -11,7 +11,8 @@ contract TicTacToe{
     mapping(address => bool) isParticipantAlreadyPresent;
     mapping(address => uint) playerNumber;
     uint move;
-    uint playerMove;
+    uint playerTurn = 0;
+    uint Winner;
     
     modifier notQuizMaster(){
         require(msg.sender!=admin,"Admin cannot become a particiant");
@@ -39,8 +40,13 @@ contract TicTacToe{
     }
     
     
-    modifier isPlayerMove(address participant){
-        require(playerNumber[participant]==playerMove,"You have already registered");
+    modifier isPlayerTurn(address participant){
+        require(playerNumber[participant]==playerTurn,"You have already registered");
+        _;
+    }
+    
+    modifier hasGameNotEnded(address participant){
+        require(Winner == 0,"You have already registered");
         _;
     }
     
@@ -54,12 +60,26 @@ contract TicTacToe{
     }
     
     function playerMove(uint x, uint y)
+    public
+    isPlayerTurn(msg.sender)
+    hasGameNotEnded
+    {
+        matrix[x-1][y-1] = playerTurn+1;
+        checkWinner();
+        playerTurn = 1 - playerTurn;
+    }
+    
+    
+    function checkWinner()
+    private
     {
         
     }
     
     
-   
+    
+    
+    
     
     
 }
