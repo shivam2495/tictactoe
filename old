@@ -1,0 +1,236 @@
+pragma solidity ^0.4.8;
+
+contract Contract{
+    
+    struct bidder
+    {
+        int16 w_u;
+        int16 w_v;
+        uint16 SiLength;
+        address bidderAddress;
+        int16[] SiU;
+        int16[] SiV;
+        uint16 notaryMapping;
+        bool[] items;
+        bool isWinner;
+        int16 payment;
+    }
+    struct notary
+    {
+        address notaryAddress;
+        int16 U;
+        int16 V;
+    }
+
+    // event BidderList(
+    //     bidder bidder_item
+    // );
+    
+    bool auctionStarted;
+    int16 q=0;
+    int16 M=0;
+    int16 perTransactionFees=0;
+    uint16 bidderCount = 0;
+    int16 notary_count = 0;
+    int16 bidderAssigned = 0;
+    int16 transactionCount = 0;
+    int16 notaryPayment = 0;
+
+    mapping(int16 => bidder) public bidder_list;
+    mapping(int16 => notary) public notary_list;
+    mapping(address => int8) public uniqueAddress;
+    
+    modifier ifAuctionStarted(){
+        require(auctionStarted == true,"Auction hasn't started yet");
+        _;
+    }
+
+    modifier isAuctioneer(){
+        require(uniqueAddress[msg.sender] == 1,"Only Auctioneer can use this function");
+        _;
+    }
+    
+    // constructor(int16 q1,int16 M1,int16 PTF) public{
+    //     M = M1;
+    //     q = q1;
+    //     perTransactionFees = PTF;
+    // }
+    
+    function startAuction(int16 q1,int16 M1,int16 PTF) public{
+        M = M1;
+        q = q1;
+        perTransactionFees = PTF;
+        auctionStarted = true;
+        uniqueAddress[msg.sender] = 1;
+    }
+    
+    function sqrt(uint16 x) private returns (uint16 y) {
+        uint16 z = (x + 1) / 2;
+        y = x;
+        while (z < y) {
+            y = z;
+            z = (x / z + z) / 2;
+        }
+    }
+    
+    function generateUandV(int16 x) private returns(int16,int16) {
+        int16 u = int16(sha3(block.blockhash(block.number), x))%q;
+        if(u<0){
+            u=-u;
+        }
+        int16 v = (x-u)%q;
+        if(v<0){
+            v=v+q;
+        }
+        return (u,v);
+    }
+    
+    function addBidder(uint16 w, int16[] memory Si ) public payable ifAuctionStarted {
+        require(uniqueAddress[msg.sender] == 0, "Duplicate Address Found");
+        require(msg.value >= w*uint16(sqrt(uint16(Si.length))), "Insufficient Amount");
+        uniqueAddress[msg.sender] = 2;
+        bidder memory bidderInstance;
+        bidderInstance.bidderAddress = msg.sender;
+        uint16 Silength = uint16(Si.length);
+        bidderInstance.SiLength = Silength;
+        int16[] memory SiU = new int16[](Silength);
+        int16[] memory SiV = new int16[](Silength);
+        bool[] memory items = new bool[](uint16(M+1));
+        for(uint16 i = 0; i<Silength; i++){
+            (int16 a, int16 b) = generateUandV(Si[i]);
+            SiU[i] = a;
+            SiV[i] = b;
+            items[uint16(Si[i])] = true;
+        }
+        bidderInstance.SiU = SiU;
+        bidderInstance.SiV = SiV;
+        bidderInstance.items = items;
+        (int16 x, int16 y) = generateUandV(int16(w));
+        bidderInstance.w_u = x;
+        bidderInstance.w_v = y;
+        bidderInstance.notaryMapping = bidderCount; 
+        bidder_list[int16(bidderCount++)] = bidderInstance;
+    }
+   
+    function compareUV(int16 firstNotary,int16 secondNotary) private returns(int16,int16) {
+        int16 u1 = notary_list[firstNotary].U;
+        int16 v1 = notary_list[firstNotary].V;
+        int16 u2 = notary_list[secondNotary].U;
+        int16 v2 = notary_list[secondNotary].V;
+        return((u1-u2),(v1-v2));
+    }
+
+    function addNotary() public {
+        require(uniqueAddress[msg.sender] == 0, "Duplicate Address Found");
+        notary memory notaryInstance;
+        uniqueAddress[msg.sender] = 3;
+        notaryInstance.notaryAddress = msg.sender;
+        notaryInstance.U = bidder_list[bidderAssigned].w_u;
+        notaryInstance.V = bidder_list[bidderAssigned++].w_v;
+        notary_list[notary_count++] = notaryInstance;
+    }
+    function sortBidders() public ifAuctionStarted isAuctioneer{
+        int16 max;
+        uint16 bidderCountLocal = bidderCount;
+        for(int16 i = 0;i<int16(bidderCountLocal);i++){
+            max = i;
+            for(int16 j = i+1;j<int16(bidderCountLocal);j++){
+                (int16 val1,int16 val2) = compareUV(int16(bidder_list[max].notaryMapping),int16(bidder_list[j].notaryMapping));
+                transactionCount++;
+                int16 val = (val1+val2);
+                if(val<0){
+                    val = val + q;
+                }
+                if(val > q/2){
+                    max = j;
+                }
+            }
+            bidder temp = bidder_list[int16(i)];
+            bidder_list[int16(i)] = bidder_list[int16(max)];
+            bidder_list[int16(max)] = temp;
+        }
+    }
+    
+    function findWinners()public ifAuctionStarted isAuctioneer{
+        bool[] memory winnerItems = new bool[](uint16(M));
+        uint16 bidderCountLocal = bidderCount;
+        for(int16 j = 0; j<int16(bidderCountLocal); j++){
+            bool isWinnner = true;
+            bidder jbidder = bidder_list[j];
+            for(uint16 k = 0; k<jbidder.SiLength; k++){
+                if(winnerItems[uint16((jbidder.SiU[k] + jbidder.SiV[k])%q)] == true){
+                    isWinnner = false;
+                    break;
+                }
+            }
+            if(isWinnner == true){
+                for(uint16 l = 0; l<jbidder.SiLength; l++){
+                    winnerItems[uint16((jbidder.SiU[l] + jbidder.SiV[l])%q)] = true;
+                }
+                bidder_list[j].isWinner = true;
+            }
+        }
+    }
+    
+    function calcPayments() public ifAuctionStarted isAuctioneer{
+        uint16 bidderCountLocal = bidderCount;
+        for(int16 i = 0; i < int16(bidderCountLocal); i++){
+            bidder ibidder = bidder_list[i];
+            if(ibidder.isWinner == true){
+                for(int16 j = i+1;j < int16(bidderCountLocal);j++){
+                    bidder jbidder = bidder_list[j];
+                    bool ensureJ = false;
+                    bool findJ = false;
+                    for(uint16 l = 0; l<jbidder.SiLength; l++){
+                        if(ibidder.items[uint16((jbidder.SiU[l] + jbidder.SiV[l])%q)]==true){
+                            findJ = true;
+                            break;
+                        }
+                    }
+                    if(findJ==true){
+                        bool allKIntersecting = false;
+                        for(int16 k = 0;k<j;k++){
+                            if(k == i){
+                                continue;
+                            }
+                            bool isIntersecting = false;
+                            bidder kbidder = bidder_list[k];
+                            for(uint16 n = 0; n<kbidder.SiLength; n++){
+                                if(jbidder.items[uint16((kbidder.SiU[n] + kbidder.SiV[n])%q)]==true){
+                                    isIntersecting = true;
+                                    break;
+                                }
+                            }
+                            if(isIntersecting == true){
+                                allKIntersecting = true;
+                                break;
+                            }
+                        }
+                        if(allKIntersecting == false){
+                            ensureJ = true;
+                        }
+                    }
+                    if(ensureJ == true){
+                        bidder_list[i].payment = ((ibidder.w_u+ibidder.w_v)%q - (jbidder.w_u + jbidder.w_v)%q ) * int16(sqrt(ibidder.SiLength));
+                        break;
+                    }   
+                }
+            }
+        }
+        notaryPayment = transactionCount * perTransactionFees;
+        // emit BidderList(bidder_list[0]);
+    }
+
+    function payNotaries() public ifAuctionStarted isAuctioneer{
+        int16 perNotarypayment = int16(notaryPayment/notary_count);
+        for(int16 i = 0;i<notary_count; i++){
+            notary_list[i].notaryAddress.transfer(2000000000*uint(perNotarypayment));
+        }
+    }
+
+    function withdrawl() public ifAuctionStarted isAuctioneer{
+        for(int16 i = 0; i<int16(bidderCount); i++){
+            bidder_list[i].bidderAddress.transfer(2000000000*uint(bidder_list[i].payment));
+        } 
+    }
+}
